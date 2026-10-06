@@ -1,7 +1,8 @@
-import { ChevronLeft, Settings } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MobileMenu } from "./mobile-menu";
 
 export function PageHeader({
   title,
@@ -33,13 +34,7 @@ export function PageHeader({
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {actions}
-        {showSettings && (
-          <Button variant="ghost" size="icon" className="lg:hidden" asChild>
-            <Link href="/settings" aria-label="設定">
-              <Settings className="size-5" />
-            </Link>
-          </Button>
-        )}
+        {showSettings && <MobileMenu />}
       </div>
     </header>
   );

@@ -242,6 +242,15 @@ begin
 
   v_price := coalesce(new.actual_sale_price, new.expected_sale_price);
 
+  -- 販売先が削除された（FK で NULL 化）売却済み商品は、確定済みの手数料を維持する
+  if tg_op = 'UPDATE' and new.selling_fee_auto
+     and new.status in ('sold', 'shipped')
+     and old.selling_platform_id is not null and new.selling_platform_id is null
+     and new.actual_sale_price is not distinct from old.actual_sale_price then
+    new.selling_fee_auto := false;
+    new.selling_fee := old.selling_fee;
+  end if;
+
   if new.selling_fee_auto then
     if new.selling_platform_id is not null then
       select p.fee_rate, p.fee_fixed into v_rate, v_fixed

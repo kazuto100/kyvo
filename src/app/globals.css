@@ -101,9 +101,9 @@
   --loss-soft: oklch(0.32 0.08 25 / 55%);
   --warn: oklch(0.8 0.14 75);
   --warn-soft: oklch(0.34 0.06 75 / 55%);
-  --brand: oklch(0.7 0.16 260);
+  --brand: oklch(0.6 0.18 262);
   --brand-soft: oklch(0.3 0.06 260 / 55%);
-  --chart-1: oklch(0.7 0.16 260);
+  --chart-1: oklch(0.68 0.16 260);
   --chart-2: oklch(0.74 0.16 155);
 }
 

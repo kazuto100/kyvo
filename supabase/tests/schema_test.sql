@@ -68,6 +68,18 @@ do $$ begin
   assert (select count(*) from public.sales) = 0, 'sale removed';
 end $$;
 
+-- 販売先を削除しても売却済み商品の手数料は維持、未売却商品は 0 円で再計算
+update public.products set selling_fee_auto = true, status = 'sold';
+insert into public.products (name, purchase_price, expected_sale_price, selling_platform_id)
+select '未売却', 1000, 5000, id from public.platforms where name = 'メルカリ';
+delete from public.platforms where name = 'メルカリ';
+do $$ begin
+  assert (select selling_fee from public.products where name = 'テスト商品') = 2200, 'sold fee kept after platform delete';
+  assert (select selling_fee_auto from public.products where name = 'テスト商品') = false, 'fee frozen';
+  assert (select selling_fee from public.products where name = '未売却') = 0, 'unsold fee recalculated';
+end $$;
+update public.products set status = 'listed' where name = 'テスト商品';
+
 -- 販売価格未入力 → 利益は null
 insert into public.products (name, purchase_price) values ('価格未定', 1000);
 do $$ begin
