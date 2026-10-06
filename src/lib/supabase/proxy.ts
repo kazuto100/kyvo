@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "./env";
 
 /** 認証不要のパス */
-const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/setup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/auth", "/setup", "/offline"];
 
 export async function updateSession(request: NextRequest) {
   const env = getSupabaseEnv();

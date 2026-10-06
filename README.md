@@ -30,7 +30,8 @@ Next.js 16 (App Router) / TypeScript / Tailwind CSS v4 / shadcn/ui（Radix）/ S
    Redirect URL（`https://<your-domain>/auth/callback`）を設定
    （メール確認を有効にしている場合に必要）
 
-スマホでは「ホーム画面に追加」でアプリとして使えます。
+スマホでは「ホーム画面に追加」でアプリとして使えます。圏外ではオフライン画面を表示します
+（Service Worker は本番ビルドのみ有効。ログイン後のデータはキャッシュしません）。
 
 ## コマンド
 
@@ -41,6 +42,11 @@ Next.js 16 (App Router) / TypeScript / Tailwind CSS v4 / shadcn/ui（Radix）/ S
 | `npm run lint` | ESLint |
 | `npm run typecheck` | 型チェック |
 | `npm test` | 利益計算・集計ロジックのユニットテスト（Vitest） |
+| `npm run check` | lint + 型チェック + ユニットテスト |
+| `npm run e2e` | スマホ幅のブラウザ通しテスト（準備手順は [`e2e/README.md`](e2e/README.md)） |
+
+GitHub Actions（`.github/workflows/ci.yml`）で、PR ごとに lint・型チェック・テスト・ビルドと
+PostgreSQL 16 上のスキーマ／RLS テストが実行されます。
 
 DB スキーマの検証（ローカル Postgres、任意）:
 

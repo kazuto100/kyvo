@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useDiscardUnsavedImages } from "@/hooks/use-discard-unsaved-images";
 import { useProfitCalc } from "@/hooks/use-profit-calc";
 import { CONDITIONS, isSold, STATUS_META } from "@/lib/constants";
 import { deleteProductImages } from "@/lib/images";
@@ -50,6 +51,7 @@ export function ProductForm({ master, userId, today, product, initialImages = []
   const [newStoreName, setNewStoreName] = useState("");
   const [storeSelect, setStoreSelect] = useState<string>(product?.purchase_store_id ?? "");
   const [images, setImages] = useState<UploadedImage[]>(initialImages);
+  const { markSaved } = useDiscardUnsavedImages(images);
   const [imagesBusy, setImagesBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -141,6 +143,7 @@ export function ProductForm({ master, userId, today, product, initialImages = []
         },
         isNew,
       );
+      markSaved();
       // 編集で外された保存済み画像を Storage から削除
       const removed = (product?.image_urls ?? []).filter((p) => !imagePaths.includes(p));
       void deleteProductImages(removed);
