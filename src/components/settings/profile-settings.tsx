@@ -131,7 +131,7 @@ export function ThresholdSettings({ profile }: { profile: Profile }) {
             <YenInput value={values.recommend_min_profit} onChange={set("recommend_min_profit")} />
           </Field>
           <Field label="利益率（以上）">
-            <YenInput value={values.recommend_min_margin} onChange={set("recommend_min_margin")} prefix={null} suffix="%" />
+            <YenInput value={values.recommend_min_margin} onChange={set("recommend_min_margin")} prefix={null} suffix="%" decimal />
           </Field>
         </div>
         <p className="text-sm font-medium">❌ 見送り（どちらかを下回る）</p>
@@ -140,7 +140,7 @@ export function ThresholdSettings({ profile }: { profile: Profile }) {
             <YenInput value={values.consider_min_profit} onChange={set("consider_min_profit")} />
           </Field>
           <Field label="利益率（未満）">
-            <YenInput value={values.consider_min_margin} onChange={set("consider_min_margin")} prefix={null} suffix="%" />
+            <YenInput value={values.consider_min_margin} onChange={set("consider_min_margin")} prefix={null} suffix="%" decimal />
           </Field>
         </div>
         <p className="text-xs text-muted-foreground">その間は ⚠️ 要検討。おすすめの利益額は「最大仕入価格」の目標利益にも使います。</p>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { ProductList } from "@/components/products/product-list";
 import { Button } from "@/components/ui/button";
-import { getMasterData, getProducts, signImagePaths } from "@/lib/data";
+import { getMasterData, getProducts } from "@/lib/data";
 import { todayISO } from "@/lib/format";
 import type { StatusFilter } from "@/lib/product-filter";
 import { PRODUCT_STATUSES } from "@/lib/types";
@@ -17,7 +17,6 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
   const sp = await searchParams;
   const status = STATUS_PARAMS.find((s) => s === sp.status);
   const [master, products] = await Promise.all([getMasterData(), getProducts()]);
-  const images = await signImagePaths(products.map((p) => p.image_urls[0]).filter(Boolean));
   return (
     <div>
       <PageHeader
@@ -32,7 +31,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/product
           </Button>
         }
       />
-      <ProductList products={products} master={master} images={images} today={todayISO()} initialStatus={status} />
+      <ProductList products={products} master={master} today={todayISO()} initialStatus={status} />
     </div>
   );
 }

@@ -141,6 +141,45 @@ const email = `e2e${Date.now()}@example.com`;
   assert.match(dash, /¥500,000/);
   assert.match(dash, /2\.2%/, "10950/500000=2.19%");
 
+  step("settings: decimal margin threshold (29.9%)");
+  await page.goto(`${BASE}/settings`);
+  const marginInputs = page.locator("#criteria input[inputmode=decimal]");
+  await marginInputs.first().fill("29.9");
+  await page.getByRole("button", { name: "基準を保存" }).click();
+  await page.getByText("基準を保存しました").waitFor();
+  await page.goto(`${BASE}/settings`);
+  assert.equal(await page.locator("#criteria input[inputmode=decimal]").first().inputValue(), "29.9");
+  await marginInputs.first().fill("30");
+  await page.getByRole("button", { name: "基準を保存" }).click();
+  await page.getByText("基準を保存しました").waitFor();
+
+  step("CSV import (70 rows) and paginated list");
+  const header = "商品名,ブランド,カテゴリ,仕入先,仕入店舗,仕入日,仕入価格,販売先,想定販売価格,送料,ステータス,出品URL";
+  const rowsCsv = Array.from({ length: 70 }, (_, i) =>
+    `CSV商品${i + 1},NIKE,スニーカー,ハードオフ,ハードオフ多治見店,2026/09/${String((i % 28) + 1).padStart(2, "0")},${1000 + i},メルカリ,5000,750,出品中,${i === 0 ? "javascript:alert(1)" : "https://jp.mercari.com/item/m" + i}`,
+  );
+  await page.locator("#data input[type=file]").setInputFiles({
+    name: "import.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("\uFEFF" + [header, ...rowsCsv].join("\r\n")),
+  });
+  await page.getByText("70件を取り込みました").waitFor({ timeout: 20000 });
+  await page.goto(`${BASE}/products`);
+  await page.getByText("72件").waitFor();
+  assert.equal(await page.locator("main a[href^='/products/'][aria-label]").count(), 60, "first page 60 rows");
+  await page.getByRole("button", { name: /さらに表示（残り12件）/ }).click();
+  await page.waitForFunction(() => document.querySelectorAll("main a[href^='/products/'][aria-label]").length === 72);
+  await page.fill("input[type=search]", "ハードオフ多治見");
+  await page.getByText("70件").waitFor();
+  await page.fill("input[type=search]", "CSV商品1 ");
+  const imported = page.locator("main a[aria-label='CSV商品1']");
+  await imported.click();
+  await page.getByText("ハードオフ多治見店").waitFor();
+  assert.doesNotMatch(await text("main"), /出品ページを開く/, "javascript: URL was dropped");
+  await page.goto(`${BASE}/inventory`);
+  await page.getByText("現在在庫").waitFor();
+  await page.getByRole("button", { name: /さらに表示/ }).waitFor();
+
   step("analytics / inventory / expenses pages render");
   await page.goto(`${BASE}/analytics`);
   await page.getByText("月別利益").waitFor();
@@ -150,7 +189,7 @@ const email = `e2e${Date.now()}@example.com`;
   assert.match(await text("main"), /セカンドストリート/);
   await page.goto(`${BASE}/inventory`);
   await page.getByText("現在在庫").waitFor();
-  assert.match(await text("main"), /1商品/);
+  assert.match(await text("main"), /71商品/);
   await page.goto(`${BASE}/expenses`);
   await page.fill("#exp-amount", "450");
   await page.getByRole("button", { name: "経費を追加" }).click();
@@ -165,7 +204,7 @@ const email = `e2e${Date.now()}@example.com`;
   await page.getByRole("menuitem", { name: "削除" }).click();
   await page.getByRole("button", { name: "削除する" }).click();
   await page.waitForURL(`${BASE}/products`);
-  await page.getByText("1件").waitFor();
+  await page.getByText("71件").waitFor();
 
   step("unsaved uploaded image is removed from storage");
   await page.goto(`${BASE}/products/new`);
@@ -176,7 +215,7 @@ const email = `e2e${Date.now()}@example.com`;
   // 保存せずにアプリ内で別ページへ移動
   await page.getByRole("link", { name: "商品", exact: true }).click();
   await page.waitForURL(`${BASE}/products`);
-  await page.getByText("1件").waitFor();
+  await page.getByText("71件").waitFor();
   await page.waitForTimeout(500);
   const log = await (await fetch(`${process.env.E2E_SUPABASE_URL || "http://localhost:54321"}/__test/storage-log`)).json();
   assert.ok(log.some((l) => l.startsWith("POST /storage/v1/object/product-images/")), "uploaded");
@@ -184,10 +223,10 @@ const email = `e2e${Date.now()}@example.com`;
 
   step("offline page via service worker");
   await page.reload();
-  await page.getByText("1件").waitFor();
+  await page.getByText("71件").waitFor();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload(); // SW がページを制御した状態にする
-  await page.getByText("1件").waitFor();
+  await page.getByText("71件").waitFor();
   await ctx.setOffline(true);
   await page.goto(`${BASE}/analytics`).catch(() => {});
   await page.getByText("オフラインです").waitFor();

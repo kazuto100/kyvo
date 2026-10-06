@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { InventoryView } from "@/components/inventory/inventory-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { inventorySummary } from "@/lib/analytics";
-import { getMasterData, getProducts, signImagePaths } from "@/lib/data";
+import { getMasterData, getProducts } from "@/lib/data";
 import { formatNumber, formatYen, todayISO } from "@/lib/format";
 
 export const metadata: Metadata = { title: "在庫" };
@@ -12,7 +12,6 @@ export default async function InventoryPage() {
   const [master, products] = await Promise.all([getMasterData(), getProducts()]);
   const today = todayISO();
   const inv = inventorySummary(products, today, master.profile);
-  const images = await signImagePaths(inv.stock.map((p) => p.image_urls[0]).filter(Boolean));
   const maxBucket = Math.max(1, ...inv.aging.map((b) => b.count));
 
   return (
@@ -51,7 +50,7 @@ export default async function InventoryPage() {
         </CardContent>
       </Card>
 
-      <InventoryView stock={inv.stock} master={master} images={images} today={today} />
+      <InventoryView stock={inv.stock} master={master} today={today} />
     </div>
   );
 }

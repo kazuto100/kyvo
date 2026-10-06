@@ -8,6 +8,7 @@ import { Field } from "@/components/app/field";
 import { Money, Percent } from "@/components/app/money";
 import { StatusBadge } from "@/components/app/status-badge";
 import { YenInput } from "@/components/app/yen-input";
+import { useSignedImageUrls } from "@/hooks/use-signed-image-urls";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ const STATUS_CHIPS: { key: StatusFilter; label: string }[] = [
   { key: "returned", label: "返品" },
 ];
 
+const PAGE_SIZE = 60;
 const VIEW_KEY = "resell:products:view";
 const VIEW_EVENT = "resell:view-change";
 
@@ -64,13 +66,11 @@ function subscribeView(cb: () => void) {
 export function ProductList({
   products,
   master,
-  images,
   today,
   initialStatus,
 }: {
   products: Product[];
   master: MasterData;
-  images: Record<string, string>;
   today: string;
   initialStatus?: StatusFilter;
 }) {
@@ -92,8 +92,18 @@ export function ProductList({
     }),
     [result],
   );
+  // 条件が変わったら表示件数を先頭ページに戻す
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [prevResult, setPrevResult] = useState(result);
+  if (prevResult !== result) {
+    setPrevResult(result);
+    setLimit(PAGE_SIZE);
+  }
+  const visible = result.slice(0, limit);
+  const images = useSignedImageUrls(visible.map((p) => p.image_urls[0]).filter(Boolean));
   const advancedCount = activeFilterCount(filters);
-  const brandName = (id: string | null) => master.brands.find((b) => b.id === id)?.name;
+  const brands = useMemo(() => new Map(master.brands.map((b) => [b.id, b.name])), [master.brands]);
+  const brandName = (id: string | null) => (id ? brands.get(id) : undefined);
 
   function changeView(v: "card" | "table") {
     try {
@@ -219,10 +229,10 @@ export function ProductList({
           }
         />
       ) : view === "table" ? (
-        <ProductTable products={result} images={images} />
+        <ProductTable products={visible} images={images} />
       ) : (
         <div className="grid gap-2 lg:grid-cols-2">
-          {result.map((p) => (
+          {visible.map((p) => (
             <ProductRow
               key={p.id}
               product={p}
@@ -233,6 +243,12 @@ export function ProductList({
             />
           ))}
         </div>
+      )}
+
+      {result.length > visible.length && (
+        <Button variant="outline" size="lg" className="w-full" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+          さらに表示（残り{result.length - visible.length}件）
+        </Button>
       )}
 
       <FilterDialog
@@ -365,10 +381,10 @@ function FilterDialog({
               <YenInput value={draft.maxProfit} onChange={(v) => set("maxProfit", v)} placeholder="上限" />
             </Field>
             <Field label="利益率（以上）">
-              <YenInput value={draft.minMargin} onChange={(v) => set("minMargin", v)} prefix={null} suffix="%" placeholder="下限" />
+              <YenInput value={draft.minMargin} onChange={(v) => set("minMargin", v)} prefix={null} suffix="%" decimal placeholder="下限" />
             </Field>
             <Field label="利益率（以下）">
-              <YenInput value={draft.maxMargin} onChange={(v) => set("maxMargin", v)} prefix={null} suffix="%" placeholder="上限" />
+              <YenInput value={draft.maxMargin} onChange={(v) => set("maxMargin", v)} prefix={null} suffix="%" decimal placeholder="上限" />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">

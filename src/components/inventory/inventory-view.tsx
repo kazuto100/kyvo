@@ -2,11 +2,15 @@
 
 import { Warehouse } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useSignedImageUrls } from "@/hooks/use-signed-image-urls";
 import { EmptyState } from "@/components/app/empty-state";
 import { ProductRow } from "@/components/products/product-row";
 import { stockAlertLevel, stockDays, type StockAlertLevel } from "@/lib/analytics";
 import type { MasterData, Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 60;
 
 const FILTERS: { key: "all" | Exclude<StockAlertLevel, "none">; label: string }[] = [
   { key: "all", label: "すべて" },
@@ -18,12 +22,10 @@ const FILTERS: { key: "all" | Exclude<StockAlertLevel, "none">; label: string }[
 export function InventoryView({
   stock,
   master,
-  images,
   today,
 }: {
   stock: Product[];
   master: MasterData;
-  images: Record<string, string>;
   today: string;
 }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
@@ -35,7 +37,16 @@ export function InventoryView({
         .sort((a, b) => b.days - a.days),
     [stock, today, filter, master.profile],
   );
-  const brandName = (id: string | null) => master.brands.find((b) => b.id === id)?.name;
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [prevList, setPrevList] = useState(list);
+  if (prevList !== list) {
+    setPrevList(list);
+    setLimit(PAGE_SIZE);
+  }
+  const visible = list.slice(0, limit);
+  const images = useSignedImageUrls(visible.map(({ p }) => p.image_urls[0]).filter(Boolean));
+  const brands = useMemo(() => new Map(master.brands.map((b) => [b.id, b.name])), [master.brands]);
+  const brandName = (id: string | null) => (id ? brands.get(id) : undefined);
 
   if (stock.length === 0) {
     return <EmptyState icon={Warehouse} title="在庫はありません" description="すべて売り切れています。次の仕入れへ！" />;
@@ -62,10 +73,15 @@ export function InventoryView({
         <p className="py-8 text-center text-sm text-muted-foreground">該当する在庫はありません</p>
       ) : (
         <div className="grid gap-2 lg:grid-cols-2">
-          {list.map(({ p }) => (
+          {visible.map(({ p }) => (
             <ProductRow key={p.id} product={p} imageUrl={images[p.image_urls[0]]} brandName={brandName(p.brand_id)} today={today} thresholds={master.profile} />
           ))}
         </div>
+      )}
+      {list.length > visible.length && (
+        <Button variant="outline" size="lg" className="w-full" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+          さらに表示（残り{list.length - visible.length}件）
+        </Button>
       )}
     </div>
   );

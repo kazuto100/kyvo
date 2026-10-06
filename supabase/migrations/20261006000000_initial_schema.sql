@@ -179,7 +179,7 @@ create table public.products (
   actual_sale_price integer check (actual_sale_price >= 0),
   listing_date date,
   sold_date date,
-  listing_url text,
+  listing_url text check (listing_url is null or listing_url ~* '^https?://'),
   status public.product_status not null default 'purchased',
 
   -- 費用
@@ -277,6 +277,55 @@ begin
   return new;
 end;
 $$;
+
+-- 参照先（ブランド・カテゴリ・仕入先・店舗・販売先）が本人のデータかを検証
+-- （外部キー制約は RLS を経由しないため、他ユーザーの ID を参照できないようにする）
+create or replace function public.products_check_ownership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if (new.brand_id is not null and not exists (
+        select 1 from public.brands where id = new.brand_id and user_id = new.user_id))
+     or (new.category_id is not null and not exists (
+        select 1 from public.categories where id = new.category_id and user_id = new.user_id))
+     or (new.supplier_id is not null and not exists (
+        select 1 from public.suppliers where id = new.supplier_id and user_id = new.user_id))
+     or (new.purchase_store_id is not null and not exists (
+        select 1 from public.stores where id = new.purchase_store_id and user_id = new.user_id))
+     or (new.selling_platform_id is not null and not exists (
+        select 1 from public.platforms where id = new.selling_platform_id and user_id = new.user_id))
+  then
+    raise exception 'referenced master data does not belong to the user'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger products_check_ownership
+  before insert or update of brand_id, category_id, supplier_id, purchase_store_id, selling_platform_id, user_id
+  on public.products
+  for each row execute function public.products_check_ownership();
+
+create or replace function public.stores_check_ownership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.supplier_id is not null and not exists (
+       select 1 from public.suppliers where id = new.supplier_id and user_id = new.user_id) then
+    raise exception 'referenced supplier does not belong to the user' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger stores_check_ownership
+  before insert or update of supplier_id, user_id on public.stores
+  for each row execute function public.stores_check_ownership();
 
 create trigger products_compute
   before insert or update on public.products

@@ -66,3 +66,19 @@ describe("ranking / groupAnalysis", () => {
     expect(rows.find((r) => r.key === "__none__")!.label).toBe("未設定");
   });
 });
+
+describe("parseProductCSV", () => {
+  it("見出しで列を対応付け、不正なURLは捨てる", async () => {
+    const { parseProductCSV } = await import("../csv");
+    const csv = '﻿商品名,仕入価格,ステータス,出品URL,販売日\r\n"A, B","1,200",売却済み,javascript:alert(1),2026/10/5\r\nC,500,出品中,https://jp.mercari.com/item/m1,\r\n,1,,,\r\n';
+    const { rows, errors } = parseProductCSV(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].name).toBe("A, B");
+    expect(rows[0].purchase_price).toBe(1200);
+    expect(rows[0].status).toBe("sold");
+    expect(rows[0].listing_url).toBeNull();
+    expect(rows[0].sold_date).toBe("2026-10-05");
+    expect(rows[1].listing_url).toBe("https://jp.mercari.com/item/m1");
+    expect(errors).toHaveLength(1);
+  });
+});

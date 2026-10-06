@@ -221,6 +221,11 @@ http
         // Storage は記録のみ（画像の後片付けの検証用）
         console.log("storage", req.method, url.pathname);
         storageLog.push(`${req.method} ${url.pathname}`);
+        if (url.pathname.endsWith("/object/sign/product-images")) {
+          // 一括署名: { paths } → [{ path, signedURL }]
+          const { paths = [] } = (await readBody(req)) || {};
+          return send(res, 200, paths.map((p) => ({ path: p, signedURL: `/object/sign/product-images/${p}?token=test`, error: null })));
+        }
         return send(res, 200, url.pathname.includes("/object/sign/") ? { signedURL: null } : []);
       }
       if (url.pathname === "/__test/storage-log") return send(res, 200, storageLog);

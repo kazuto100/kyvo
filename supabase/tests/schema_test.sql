@@ -108,6 +108,38 @@ do $$ begin
   end;
 end $$;
 
+-- 他ユーザーのマスタ（ブランド・店舗の仕入先）は参照できない
+do $$
+declare other_brand uuid; other_supplier uuid;
+begin
+  reset role;
+  select id into other_supplier from public.suppliers where user_id = '11111111-1111-1111-1111-111111111111' limit 1;
+  insert into public.brands (user_id, name) values ('11111111-1111-1111-1111-111111111111', 'OTHER') returning id into other_brand;
+  set role authenticated;
+  begin
+    insert into public.products (name, brand_id) values ('x', other_brand);
+    assert false, 'foreign brand must be rejected';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.stores (name, supplier_id) values ('x', other_supplier);
+    assert false, 'foreign supplier must be rejected';
+  exception when insufficient_privilege then null;
+  end;
+  -- 自分のマスタは参照できる
+  insert into public.products (name, category_id)
+    select 'own', id from public.categories limit 1;
+end $$;
+
+-- 出品URLは http(s) のみ
+do $$ begin
+  begin
+    insert into public.products (name, listing_url) values ('x', 'javascript:alert(1)');
+    assert false, 'non-http url must be rejected';
+  exception when check_violation then null;
+  end;
+end $$;
+
 -- Storage RLS
 insert into storage.objects (bucket_id, name) values ('product-images', '22222222-2222-2222-2222-222222222222/p/1.jpg');
 do $$ begin

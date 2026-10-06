@@ -179,7 +179,7 @@ export function parseProductCSV(text: string): { rows: ImportedRow[]; errors: st
       status: toStatus(get(r, "ステータス")),
       listing_date: toDate(get(r, "出品日")),
       sold_date: toDate(get(r, "販売日")),
-      listing_url: get(r, "出品URL") || null,
+      listing_url: /^https?:\/\//i.test(get(r, "出品URL")) ? get(r, "出品URL") : null,
       memo: get(r, "メモ") || null,
     });
   });

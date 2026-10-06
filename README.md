@@ -108,6 +108,7 @@ supabase/
 
 - 販売先は `platforms.kind`（flea_market / auction / marketplace / ec）で Amazon・楽天・Shopify 等を追加可能
 - `sales` テーブルは売却台帳（トリガーで自動同期）。複数数量販売・会計連携の土台
+- 商品一覧・在庫は60件ずつ表示し、画像の署名付き URL は表示中の分だけブラウザで取得（件数が増えても重くならない）
 - 店舗に住所・緯度経度を保持（Google Maps 連携・巡回ルート用）
 - `lib/ai/advisor.ts` の `PurchaseAdvisor` インターフェースを実装すれば AI 判定・相場取得に差し替え可能
 - アプリ名は `NEXT_PUBLIC_APP_NAME` で変更可能
