@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeJapaneseYen, ExternalLink, Loader2, MoreHorizontal, SquarePen, Trash2 } from "lucide-react";
+import { BadgeJapaneseYen, Copy, ExternalLink, Loader2, MoreHorizontal, SquarePen, Store, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,11 +27,13 @@ import {
 import { isSold, STATUS_META } from "@/lib/constants";
 import { deleteProduct, updateStatus } from "@/lib/product-service";
 import { PRODUCT_STATUSES, type MasterData, type Product, type ProductStatus } from "@/lib/types";
+import { ListDialog } from "./list-dialog";
 import { SellDialog } from "./sell-dialog";
 
 export function ProductActions({ product, master, today }: { product: Product; master: MasterData; today: string }) {
   const router = useRouter();
   const [sellOpen, setSellOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const sold = isSold(product.status);
@@ -40,6 +42,10 @@ export function ProductActions({ product, master, today }: { product: Product; m
     if (status === product.status) return;
     if (isSold(status) && !sold) {
       setSellOpen(true);
+      return;
+    }
+    if (status === "listed" && !sold) {
+      setListOpen(true);
       return;
     }
     setBusy(true);
@@ -69,19 +75,19 @@ export function ProductActions({ product, master, today }: { product: Product; m
 
   return (
     <>
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
         {sold ? (
-          <Button variant="outline" size="lg" onClick={() => setSellOpen(true)}>
+          <Button variant="outline" size="lg" className="min-w-0 px-3" onClick={() => setSellOpen(true)}>
             <BadgeJapaneseYen />
-            売却情報を修正
+            <span className="truncate">売却情報を修正</span>
           </Button>
         ) : (
-          <Button variant="brand" size="lg" onClick={() => setSellOpen(true)}>
+          <Button variant="brand" size="lg" className="min-w-0 px-3" onClick={() => setSellOpen(true)}>
             <BadgeJapaneseYen />
-            売却を登録
+            <span className="truncate">売却を登録</span>
           </Button>
         )}
-        <Button variant="outline" size="lg" asChild>
+        <Button variant="outline" size="lg" className="min-w-0 px-3" asChild>
           <Link href={`/products/${product.id}/edit`}>
             <SquarePen />
             編集
@@ -102,6 +108,12 @@ export function ProductActions({ product, master, today }: { product: Product; m
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={`/products/new?from=${product.id}`}>
+                <Copy />
+                複製して登録
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
               <Trash2 />
               削除
@@ -109,15 +121,26 @@ export function ProductActions({ product, master, today }: { product: Product; m
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {product.listing_url && (
-        <Button variant="secondary" size="lg" className="mt-2 w-full" asChild>
-          <a href={product.listing_url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink />
-            出品ページを開く
-          </a>
-        </Button>
+      {(!sold || product.listing_url) && (
+        <div className={!sold && product.listing_url ? "mt-2 grid grid-cols-2 gap-2" : "mt-2 grid"}>
+          {!sold && (
+            <Button variant="secondary" size="lg" className="min-w-0 px-3" onClick={() => setListOpen(true)}>
+              <Store />
+              <span className="truncate">{product.status === "listed" ? "出品情報" : "出品を登録"}</span>
+            </Button>
+          )}
+          {product.listing_url && (
+            <Button variant="secondary" size="lg" className="min-w-0 px-3" asChild>
+              <a href={product.listing_url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink />
+                <span className="truncate">出品ページを開く</span>
+              </a>
+            </Button>
+          )}
+        </div>
       )}
 
+      {listOpen && <ListDialog product={product} master={master} today={today} open={listOpen} onOpenChange={setListOpen} />}
       {sellOpen && <SellDialog product={product} master={master} today={today} open={sellOpen} onOpenChange={setSellOpen} />}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>

@@ -252,3 +252,17 @@ export function goalProgress(currentProfit: number, goal: number, avgProfit: num
     achieved: goal > 0 && currentProfit >= goal,
   };
 }
+
+/** 指定月 (YYYY-MM) の日別売却利益（一般経費は含まない） */
+export function dailyProfitSeries(products: Product[], month: string): { key: string; value: number }[] {
+  const [y, m] = month.split("-").map(Number);
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const byDay = new Map<string, number>();
+  for (const p of soldInMonth(products, month)) {
+    byDay.set(p.sold_date!, (byDay.get(p.sold_date!) ?? 0) + (p.profit ?? 0));
+  }
+  return Array.from({ length: days }, (_, i) => {
+    const key = `${month}-${String(i + 1).padStart(2, "0")}`;
+    return { key, value: byDay.get(key) ?? 0 };
+  });
+}

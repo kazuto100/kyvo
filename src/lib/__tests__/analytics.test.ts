@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { goalProgress, groupAnalysis, inventorySummary, monthlySummary, ranking, stockAlertLevel } from "../analytics";
+import { dailyProfitSeries, goalProgress, groupAnalysis, inventorySummary, monthlySummary, ranking, stockAlertLevel } from "../analytics";
 import type { Expense, Product } from "../types";
 
 const base: Product = {
@@ -80,5 +80,16 @@ describe("parseProductCSV", () => {
     expect(rows[0].sold_date).toBe("2026-10-05");
     expect(rows[1].listing_url).toBe("https://jp.mercari.com/item/m1");
     expect(errors).toHaveLength(1);
+  });
+});
+
+describe("dailyProfitSeries", () => {
+  it("月の日数分の系列を作り、売却日で集計する", () => {
+    const s = dailyProfitSeries(products, "2026-10");
+    expect(s).toHaveLength(31);
+    expect(s[4]).toEqual({ key: "2026-10-05", value: 9250 });
+    expect(s[5]).toEqual({ key: "2026-10-06", value: 3200 });
+    expect(s.reduce((a, d) => a + d.value, 0)).toBe(12450);
+    expect(dailyProfitSeries([], "2026-02")).toHaveLength(28);
   });
 });

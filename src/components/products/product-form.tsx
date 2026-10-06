@@ -31,25 +31,30 @@ type Props = {
   userId: string;
   today: string;
   product?: Product;
+  /** 複製元（新規登録時に内容をコピーする） */
+  template?: Product;
   initialImages?: UploadedImage[];
 };
 
-export function ProductForm({ master, userId, today, product, initialImages = [] }: Props) {
+export function ProductForm({ master, userId, today, product, template, initialImages = [] }: Props) {
   const router = useRouter();
   const isNew = !product;
   const [productId] = useState(() => product?.id ?? crypto.randomUUID());
   const { profile, platforms, categories, brands, suppliers, stores, shippingTemplates } = master;
 
   const defaultPlatform = platforms.find((p) => p.is_active) ?? null;
+  const source = product ?? template;
   const [form, setForm] = useState<ProductInput>(() =>
     product
       ? toProductInput(product)
-      : { ...emptyProductInput(today), selling_platform_id: defaultPlatform?.id ?? null },
+      : template
+        ? duplicateInput(template, today)
+        : { ...emptyProductInput(today), selling_platform_id: defaultPlatform?.id ?? null },
   );
-  const [purchasePrice, setPurchasePrice] = useState<number | null>(product ? product.purchase_price : null);
-  const [brandName, setBrandName] = useState(() => brands.find((b) => b.id === product?.brand_id)?.name ?? "");
+  const [purchasePrice, setPurchasePrice] = useState<number | null>(source ? source.purchase_price : null);
+  const [brandName, setBrandName] = useState(() => brands.find((b) => b.id === source?.brand_id)?.name ?? "");
   const [newStoreName, setNewStoreName] = useState("");
-  const [storeSelect, setStoreSelect] = useState<string>(product?.purchase_store_id ?? "");
+  const [storeSelect, setStoreSelect] = useState<string>(source?.purchase_store_id ?? "");
   const [images, setImages] = useState<UploadedImage[]>(initialImages);
   const { markSaved } = useDiscardUnsavedImages(images);
   const [imagesBusy, setImagesBusy] = useState(false);
@@ -431,6 +436,20 @@ export function ProductForm({ master, userId, today, product, initialImages = []
       </div>
     </form>
   );
+}
+
+/** 複製：仕入れ時点の情報だけ引き継ぎ、売却・出品・画像はリセット */
+function duplicateInput(p: Product, today: string): ProductInput {
+  return {
+    ...toProductInput(p),
+    image_urls: [],
+    status: "purchased",
+    purchase_date: today,
+    actual_sale_price: null,
+    sold_date: null,
+    listing_date: null,
+    listing_url: null,
+  };
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {

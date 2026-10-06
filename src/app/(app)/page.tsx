@@ -1,6 +1,7 @@
 import { AlertTriangle, Calculator, ChevronRight, Package, Plus, Zap } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DailyBarChart } from "@/components/analytics/monthly-chart";
 import { EmptyState } from "@/components/app/empty-state";
 import { Money, Percent } from "@/components/app/money";
 import { PageHeader } from "@/components/app/page-header";
@@ -10,6 +11,7 @@ import { ProductRow } from "@/components/products/product-row";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  dailyProfitSeries,
   goalProgress,
   inventorySummary,
   monthlySummary,
@@ -89,6 +91,18 @@ export default async function DashboardPage() {
           </span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
+      )}
+
+      {summary.count > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>今月の日別利益</CardTitle>
+            <span className="text-xs text-muted-foreground">売却日ベース</span>
+          </CardHeader>
+          <CardContent className="pt-2 pb-3">
+            <DailyBarChart data={dailyProfitSeries(products, month)} color="var(--profit)" label="利益" today={today} />
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-5 lg:grid-cols-5">

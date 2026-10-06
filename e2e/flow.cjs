@@ -13,12 +13,18 @@ const email = `e2e${Date.now()}@example.com`;
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "ja-JP", timezoneId: "Asia/Tokyo" });
   const page = await ctx.newPage();
+  globalThis.__page = page;
   const errors = [];
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
   const shot = (name) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
   const text = async (sel) => (await page.locator(sel).first().innerText()).replace(/\s+/g, " ");
   const step = (s) => console.log("▶", s);
+  // スマホで横スクロールが発生していないこと
+  const noHorizontalOverflow = async (where) => {
+    const { sw, w } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
+    assert.ok(sw <= w, `${where}: horizontal overflow (${sw} > ${w})`);
+  };
 
   step("signup");
   await page.goto(`${BASE}/signup`);
@@ -40,6 +46,7 @@ const email = `e2e${Date.now()}@example.com`;
   assert.match(main, /46\.25%/);
   assert.match(main, /¥12,250/, "max purchase price");
   assert.match(main, /仕入れおすすめ/);
+  await noHorizontalOverflow("simulator");
   await shot("03-simulator");
 
   step("simulator: 見送り判定");
@@ -73,6 +80,16 @@ const email = `e2e${Date.now()}@example.com`;
   await shot("05-product-detail");
   const productUrl = page.url();
 
+  step("listing registration (出品登録)");
+  await page.getByRole("button", { name: "出品を登録" }).click();
+  assert.equal(await page.locator("#list-price").inputValue(), "20000");
+  await page.locator("#list-url").fill("https://jp.mercari.com/item/m123");
+  await page.getByRole("button", { name: "出品中にする" }).click();
+  await page.getByText("出品中にしました").waitFor();
+  await page.getByRole("link", { name: "出品ページを開く" }).waitFor();
+  assert.match(await text("main"), /出品中/);
+  await noHorizontalOverflow("product detail (listed)");
+
   step("sell registration");
   await page.getByRole("button", { name: "売却を登録" }).click();
   await page.locator("#sell-price").fill("22000");
@@ -94,6 +111,8 @@ const email = `e2e${Date.now()}@example.com`;
   assert.match(dash, /¥988,950/, "remaining");
   assert.match(dash, /あと90商品/, "988950/11050 → 90");
   assert.match(dash, /今日 \+¥11,050/);
+  assert.match(dash, /今月の日別利益/);
+  await noHorizontalOverflow("dashboard");
   await shot("07-dashboard");
 
   step("quick purchase");
@@ -121,6 +140,7 @@ const email = `e2e${Date.now()}@example.com`;
   await page.getByRole("button", { name: "売却済み", exact: true }).click();
   await page.waitForFunction(() => document.querySelector("main").innerText.includes("1件"));
   await page.getByRole("button", { name: "すべて", exact: true }).click();
+  await noHorizontalOverflow("product list");
   await shot("09-product-list");
 
   step("edit product");
@@ -184,6 +204,7 @@ const email = `e2e${Date.now()}@example.com`;
   await page.goto(`${BASE}/analytics`);
   await page.getByText("月別利益").waitFor();
   await page.waitForLoadState("networkidle");
+  await noHorizontalOverflow("analytics");
   await shot("10-analytics");
   await page.getByRole("tab", { name: "仕入先" }).click();
   assert.match(await text("main"), /セカンドストリート/);
@@ -197,6 +218,27 @@ const email = `e2e${Date.now()}@example.com`;
   await page.goto(`${BASE}/`);
   await page.getByText("今月の実績").waitFor();
   assert.match(await text("main"), /¥10,500/, "10950 - 450 expense");
+
+  step("duplicate product (複製して登録)");
+  await page.goto(productUrl);
+  await page.getByRole("button", { name: "その他の操作" }).click();
+  await page.getByRole("menuitem", { name: "複製して登録" }).click();
+  await page.getByText("複製して登録").first().waitFor();
+  assert.equal(await page.locator("#name").inputValue(), "SONY α6400 ボディ");
+  assert.equal(await page.locator("#purchase_price").inputValue(), "8000");
+  assert.equal(await page.locator("#actual_sale_price").inputValue(), "", "sale info reset");
+  await page.getByRole("button", { name: "登録する" }).click();
+  await page.waitForURL((u) => /\/products\/[0-9a-f-]{36}$/.test(u.pathname) && !u.href.startsWith(productUrl));
+  await page.getByText("見込み利益").waitFor();
+  assert.match(await text("main"), /仕入れ済み/);
+  const dupUrl = page.url();
+  await page.getByRole("button", { name: "その他の操作" }).click();
+  await page.getByRole("menuitem", { name: "削除" }).click();
+  await page.getByRole("button", { name: "削除する" }).click();
+  await page.waitForURL(`${BASE}/products`);
+  await page.getByText("72件").waitFor();
+  await page.goto(dupUrl);
+  await page.getByText("ページが見つかりません").waitFor();
 
   step("delete product");
   await page.goto(productUrl);
@@ -259,7 +301,9 @@ const email = `e2e${Date.now()}@example.com`;
   if (real.length) console.log("browser errors:\n" + real.join("\n"));
   console.log("✅ E2E PASSED");
   await browser.close();
-})().catch((e) => {
+})().catch(async (e) => {
   console.error("❌", e);
+  // 失敗時の画面を保存
+  await globalThis.__page?.screenshot({ path: `${SHOTS}/failure.png` }).catch(() => {});
   process.exit(1);
 });
