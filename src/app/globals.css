@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-profit: var(--profit);
+  --color-profit-soft: var(--profit-soft);
+  --color-loss: var(--loss);
+  --color-loss-soft: var(--loss-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.002 260);
+  --surface: oklch(1 0 0);
+  --foreground: oklch(0.18 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.01 260);
+  --primary: oklch(0.2 0.01 260);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.003 260);
+  --secondary-foreground: oklch(0.2 0.01 260);
+  --muted: oklch(0.96 0.003 260);
+  --muted-foreground: oklch(0.52 0.012 260);
+  --accent: oklch(0.955 0.004 260);
+  --accent-foreground: oklch(0.2 0.01 260);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.92 0.004 260);
+  --input: oklch(0.9 0.004 260);
+  --ring: oklch(0.55 0.15 255);
+  --profit: oklch(0.56 0.15 155);
+  --profit-soft: oklch(0.96 0.04 155);
+  --loss: oklch(0.58 0.2 25);
+  --loss-soft: oklch(0.96 0.03 25);
+  --warn: oklch(0.66 0.15 65);
+  --warn-soft: oklch(0.97 0.05 85);
+  --brand: oklch(0.55 0.19 260);
+  --brand-soft: oklch(0.96 0.03 260);
+  --chart-1: oklch(0.55 0.19 260);
+  --chart-2: oklch(0.56 0.15 155);
+}
+
+.dark {
+  --background: oklch(0.145 0.004 260);
+  --surface: oklch(0.19 0.006 260);
+  --foreground: oklch(0.97 0.002 260);
+  --card: oklch(0.19 0.006 260);
+  --card-foreground: oklch(0.97 0.002 260);
+  --popover: oklch(0.21 0.006 260);
+  --popover-foreground: oklch(0.97 0.002 260);
+  --primary: oklch(0.96 0.002 260);
+  --primary-foreground: oklch(0.18 0.01 260);
+  --secondary: oklch(0.25 0.008 260);
+  --secondary-foreground: oklch(0.97 0.002 260);
+  --muted: oklch(0.25 0.008 260);
+  --muted-foreground: oklch(0.68 0.012 260);
+  --accent: oklch(0.26 0.008 260);
+  --accent-foreground: oklch(0.97 0.002 260);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.65 0.15 255);
+  --profit: oklch(0.74 0.16 155);
+  --profit-soft: oklch(0.3 0.06 155 / 55%);
+  --loss: oklch(0.7 0.18 25);
+  --loss-soft: oklch(0.32 0.08 25 / 55%);
+  --warn: oklch(0.8 0.14 75);
+  --warn-soft: oklch(0.34 0.06 75 / 55%);
+  --brand: oklch(0.7 0.16 260);
+  --brand-soft: oklch(0.3 0.06 260 / 55%);
+  --chart-1: oklch(0.7 0.16 260);
+  --chart-2: oklch(0.74 0.16 155);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "palt";
+  }
+  /* iOS の自動ズームを防ぐため入力は 16px 以上 */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
